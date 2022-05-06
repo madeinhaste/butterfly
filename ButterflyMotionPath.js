@@ -1,5 +1,5 @@
 import {Vector3, CatmullRomCurve3} from 'three';
-const {sin, cos, atan2, hypot} = Math;
+const {sin, cos, atan2, hypot, PI} = Math;
 
 const toPolar = (x, y) => [
     atan2(y, x),
@@ -25,6 +25,12 @@ export class ButterflyMotionPath {
     initCurve() {
         const [A, B] = this.points;
         const [Ap, Bp] = [A, B].map(p => toPolar(p.x, p.z));
+
+        {
+            // ensure shortest arc
+            const d = Bp[0] - Ap[0];
+            Bp[0] += 2 * PI * (d < -PI ? 1 : d > PI ? -1 : 0);
+        }
 
         const n = 100;
         const path = [];
