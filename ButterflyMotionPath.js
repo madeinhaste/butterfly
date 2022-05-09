@@ -56,6 +56,8 @@ export class ButterflyMotionPath {
         curve.getPointAt(time, position);
         curve.getTangentAt(time, forward);
         right.crossVectors(forward, up);
+        right.normalize()
+        up.crossVectors(right, forward);
         matrix.makeBasis(right, up, forward);
         matrix.setPosition(position);
         return matrix;
