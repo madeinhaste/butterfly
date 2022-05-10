@@ -2,9 +2,10 @@ import {
     PerspectiveCamera, Scene, GridHelper, Mesh, SphereGeometry,
     CylinderGeometry, MeshLambertMaterial, PointLight, AmbientLight,
     WebGLRenderer, Line, BufferGeometry, Vector3, LineBasicMaterial,
-    AxesHelper,
+    AxesHelper, Group, AnimationMixer, AnimationUtils, Color,
 } from 'three';
 import {OrbitControls} from 'three/examples/jsm/controls/OrbitControls.js';
+import {GLTFLoader} from 'three/examples/jsm/loaders/GLTFLoader.js';
 import {ButterflyMotionPath} from './ButterflyMotionPath';
 import './style.css'
 
@@ -33,12 +34,34 @@ scene.add(new Line(
     new LineBasicMaterial({color: 0x00ffff}),
 ));
 
-// fly visual
-let fly = new AxesHelper(20);
-scene.add(fly);
+// butterfly group will ride motion path
+let group = new Group
+group.matrixAutoUpdate = false;
+scene.add(group)
 
-// we'll set its matrix directly
-fly.matrixAutoUpdate = false;
+// add axes gizmo
+group.add(new AxesHelper(20));
+
+// butterfly model
+let mixer;
+
+{
+    let url = './Monarch_Butterfly.glb';
+    let gltf = await new GLTFLoader().loadAsync(url);
+    let model = gltf.scene;
+
+    // scale up and orient toward +Z
+    model.scale.multiplyScalar(500);
+    model.rotateY(-.5*PI);
+
+    // add to group
+    group.add(model);
+
+    // animation setup
+    let clip = AnimationUtils.subclip(gltf.animations[0], 'flying', 0, 38);
+    mixer = new AnimationMixer(model);
+    mixer.clipAction(clip).play();
+}
 
 // current flight time along path [0..1]
 let flyTime = 0;
@@ -94,8 +117,10 @@ function update() {
     let dt = .005;
     flyTime = (flyTime + dt) % 1;
 
+    mixer.update(.015);
+
     // sample matrix at current time
-    motionPath.getMatrixAt(flyTime, fly.matrix);
+    motionPath.getMatrixAt(flyTime, group.matrix);
 }
 
 function makeRandomPoint() {
@@ -126,6 +151,8 @@ function resetPoints() {
 }
 
 function initScene() {
+    scene.background = new Color(0x444444);
+
     {
         // lighting
         scene.add(new AmbientLight(0x444444));
